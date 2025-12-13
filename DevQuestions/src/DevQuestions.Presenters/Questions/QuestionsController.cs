@@ -1,4 +1,6 @@
+using DevQuestions.Application;
 using DevQuestions.Contracts;
+using DevQuestions.Contracts.Questions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -8,10 +10,18 @@ namespace DevQuestions.Presenters;
 [Route("[controller]")]
 public class QuestionsController : ControllerBase
 {
+    private readonly IQuestionsService _questionsService;
+
+    public QuestionsController(IQuestionsService questionsService)
+    {
+        _questionsService = questionsService;
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateQuestionDto request, CancellationToken cancellationToken)
     {
-        return Ok("Question created");
+        var questionId=await _questionsService.Create(request, cancellationToken);
+        return Ok(questionId);
     }
 
     [HttpGet]
@@ -22,7 +32,7 @@ public class QuestionsController : ControllerBase
         return Ok("Question get");
     }
 
-    [HttpGet("{questionId:guid}")] // Когда мы указываем {questionId:guid}" он трансформируеться в GET/questions/{question_id} и questionId в передаваемом параметре в методе смапиться с этим 
+    [HttpGet("{questionId:guid}")] // Когда мы указываем {questionId:guid}" он трансформируеться в GET/questions/{question_id} и questionId в передаваемом параметре в методе смапиться с этим
     public async Task<IActionResult> GetById([FromRoute] Guid questionId, CancellationToken cancellationToken)
 
     // [FromRout] указываеться после  GET/questions/{question_id}  "id" <- вот это route 
@@ -36,7 +46,7 @@ public class QuestionsController : ControllerBase
             [FromBody] UpdateQuestionDto request,
             CancellationToken cancellationToken)
 
-    // Put /questions/{question_id} <- route, body-> {title: "update tittle}
+        // Put /questions/{question_id} <- route, body-> {title: "update tittle}
     {
         return Ok("Question updated");
     }
