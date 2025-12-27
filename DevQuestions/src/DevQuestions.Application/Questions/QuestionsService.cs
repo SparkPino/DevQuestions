@@ -1,8 +1,15 @@
-﻿using DevQuestions.Application.Questions;
+﻿using System.Runtime.InteropServices.JavaScript;
+using DevQuestions.Application.Extensions;
+using DevQuestions.Application.FullTextSearch;
+using DevQuestions.Application.Questions;
+using DevQuestions.Application.Questions.Failure;
+using DevQuestions.Application.Questions.Failure.Exceptions;
 using DevQuestions.Contracts.Questions;
 using DevQuestions.Domain.Questions;
 using FluentValidation;
+using FluentValidation.Results;
 using Microsoft.Extensions.Logging;
+using Shared;
 
 namespace DevQuestions.Application;
 
@@ -10,10 +17,12 @@ public class QuestionsService // сервисы нужно называть во
 (
     IQuestionsRepository questionsRepository,
     ILogger<QuestionsService> logger,
-    IValidator<CreateQuestionDto> validator) : IQuestionsService
+    IValidator<CreateQuestionDto> validator,
+    ISearchProvider searchProvider) : IQuestionsService
 {
     private readonly IQuestionsRepository _questionsRepository = questionsRepository;
     private readonly IValidator<CreateQuestionDto> _validator = validator;
+    private readonly ISearchProvider _searchProvider = searchProvider;
     private readonly ILogger<QuestionsService> _logger = logger;
 
     public async Task<Guid> Create(CreateQuestionDto request, CancellationToken cancellationToken)
@@ -22,7 +31,8 @@ public class QuestionsService // сервисы нужно называть во
         var validatorResult = await _validator.ValidateAsync(request, cancellationToken);
         if (!validatorResult.IsValid)
         {
-            throw new ValidationException(validatorResult.Errors);
+            var errors = validatorResult.Errors.ToErrors();
+            throw new QuestionValidationException(errors);
         }
 
         // Валидация бизнес логики
@@ -30,7 +40,7 @@ public class QuestionsService // сервисы нужно называть во
             .GetOpenUserQuestionsAsync(request.UserId, cancellationToken);
         if (openUserQuestionCount > 3)
         {
-            throw new Exception("User has already 3 open questions");
+            throw new ToManyQuestionsException();
         }
 
         var questionId = Guid.NewGuid();
@@ -44,6 +54,8 @@ public class QuestionsService // сервисы нужно называть во
 
 
         await _questionsRepository.AddAsync(question, cancellationToken);
+
+        await _searchProvider.IndexQuestuionAsync(questionId);
 
         _logger.LogInformation("Question created with id {QuestionId}", questionId);
 

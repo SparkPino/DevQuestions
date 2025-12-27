@@ -1,0 +1,18 @@
+﻿using System.Collections;
+using System.Text.Json;
+using Shared;
+
+namespace DevQuestions.Application.Exceptions;
+
+public class BadRequestException : Exception
+{
+    protected BadRequestException(IEnumerable<Error> errors)
+        : base(JsonSerializer.Serialize(errors))
+    {
+    }
+
+    protected BadRequestException(IEnumerable<string> errors)
+        : base(string.Join(",", errors))
+    {
+    }
+}

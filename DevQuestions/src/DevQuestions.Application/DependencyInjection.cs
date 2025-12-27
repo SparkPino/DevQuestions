@@ -1,4 +1,6 @@
-﻿using FluentValidation;
+﻿using DevQuestions.Application.FullTextSearch;
+using DevQuestions.Application.Questions;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DevQuestions.Application;
